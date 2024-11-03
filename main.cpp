@@ -1,11 +1,13 @@
 #include "Auto.h"
 // Data
-static ID3D11Device*            g_pd3dDevice = nullptr;
-static ID3D11DeviceContext*     g_pd3dDeviceContext = nullptr;
-static IDXGISwapChain*          g_pSwapChain = nullptr;
-static bool                     g_SwapChainOccluded = false;
-static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
-static ID3D11RenderTargetView*  g_mainRenderTargetView = nullptr;
+ID3D11Device* g_pd3dDevice = nullptr;
+ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
+IDXGISwapChain* g_pSwapChain = nullptr;
+bool g_SwapChainOccluded = false;
+UINT g_ResizeWidth = 0, g_ResizeHeight = 0;
+ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
+
+ID3D11ShaderResourceView* g_background = nullptr; 
 
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
@@ -137,9 +139,8 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("你好Imguid");
-        printf("你好Imguid");
-        ImGui::End();
+        //调用窗口
+        MainWindow();
 
         // Rendering
         ImGui::Render();

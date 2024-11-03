@@ -8,6 +8,29 @@
 #include "Imgui/imstb_rectpack.h"
 #include "Imgui/imstb_textedit.h"
 #include "Imgui/imstb_truetype.h"
-#include<d3d11.h>
+
+#include <string>
+#include <d3d11.h>
 
 #pragma comment(lib,"d3d11.lib")
+
+// DirectX相关变量声明
+extern ID3D11Device* g_pd3dDevice;
+extern ID3D11DeviceContext* g_pd3dDeviceContext;
+extern IDXGISwapChain* g_pSwapChain;
+extern UINT g_ResizeWidth, g_ResizeHeight;
+extern ID3D11RenderTargetView* g_mainRenderTargetView;
+extern bool g_SwapChainOccluded;
+extern ID3D11ShaderResourceView* g_background;
+
+// 全局服务器信息
+struct ServerInfo 
+{
+    static std::string ip;
+    static std::string port;
+    static std::string name;
+    static std::string notice;
+    static bool isConnected;
+};
+
+void MainWindow();
