@@ -23,14 +23,5 @@ extern ID3D11RenderTargetView* g_mainRenderTargetView;
 extern bool g_SwapChainOccluded;
 extern ID3D11ShaderResourceView* g_background;
 
-// 全局服务器信息
-struct ServerInfo 
-{
-    static std::string ip;
-    static std::string port;
-    static std::string name;
-    static std::string notice;
-    static bool isConnected;
-};
 
 void MainWindow();

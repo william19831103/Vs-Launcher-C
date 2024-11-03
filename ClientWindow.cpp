@@ -1,13 +1,17 @@
 #include "Auto.h"
 #include "include/stb_image/stb_image.h"
+#include "ClientConnector.h"
 
-
+/*
 // 定义 ServerInfo 的静态成员
 std::string ServerInfo::ip;
 std::string ServerInfo::port;
 std::string ServerInfo::name;
 std::string ServerInfo::notice;
 bool ServerInfo::isConnected = false; 
+*/
+
+extern int startClient();
 
 // 实现LoadTextureFromFile函数
 inline bool LoadTextureFromFile(const char* filename, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height)
@@ -79,9 +83,8 @@ void MainWindow() {
         LoadTextureFromFile("Queen.jpg", &g_background, &bg_width, &bg_height);
         main_hwnd = GetActiveWindow();
         
-        // 直接调用 start_connect_server
-        //start_connect_server();
-        
+        //startClient(); //连接服务器
+
         first_time = false;
     }
 
@@ -153,12 +156,12 @@ void MainWindow() {
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
         ImGui::SetWindowFontScale(1.3f);
 
-        if (!ServerInfo::name.empty() && ServerInfo::isConnected)
+        if (!sClientInfo->name.empty() && sClientInfo->isConnected)
         {
-            int wlen = MultiByteToWideChar(CP_UTF8, 0, ServerInfo::name.c_str(), -1, NULL, 0);
+            int wlen = MultiByteToWideChar(CP_UTF8, 0, sClientInfo->name.c_str(), -1, NULL, 0);
             if (wlen > 0) 
             { 
-                ImGui::Text("%s", ServerInfo::name.c_str());
+                ImGui::Text("%s", sClientInfo->name.c_str());
             }
         } 
         else 
@@ -170,14 +173,14 @@ void MainWindow() {
         ImGui::PopFont();
 
         // 更新服务器状态指示器
-        serverOnline = ServerInfo::isConnected;
+        serverOnline = sClientInfo->isConnected;
 
         // 通知区域
         ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 20));
         ImGui::BeginChild("通知区域", ImVec2(600, 400), true);
         ImGui::SetWindowFontScale(1.3f);
         ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
-        ImGui::TextUnformatted(ServerInfo::notice.c_str());
+        ImGui::TextUnformatted(sClientInfo->notice.c_str());
         ImGui::PopTextWrapPos();
         ImGui::SetWindowFontScale(1.0f);
         ImGui::EndChild();

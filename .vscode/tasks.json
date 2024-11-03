@@ -7,11 +7,14 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                //"-mwindows",
+                "-mwindows",
                 "${workspaceFolder}\\*.cpp",
                 "${workspaceFolder}\\Imgui\\*.cpp",
                 "-I${workspaceFolder}",
                 "-I${workspaceFolder}\\Imgui",
+                "-IE:\\ThirdPardLib\\asio-1.30.2\\include",
+                "-D_WIN32_WINNT=0x0601",
+                "-DASIO_STANDALONE",
                 "-ld3d11",
                 "-ldxgi",
                 "-lole32",
@@ -19,6 +22,7 @@
                 "-ld3dcompiler",
                 "-ldwmapi",
                 "-lgdi32",
+                "-lws2_32",
                 "-o",
                 "${workspaceFolder}\\build\\projectlauncher.exe"
             ],
