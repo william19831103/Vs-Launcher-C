@@ -1,6 +1,13 @@
 #include "Auto.h"
-#include "include/stb_image/stb_image.h"
 #include "ClientConnector.h"
+#include <thread>
+
+// 取消 e 宏定义
+#ifdef e
+#undef e
+#endif
+
+#include "include/stb_image/stb_image.h"
 
 /*
 // 定义 ServerInfo 的静态成员
@@ -71,6 +78,7 @@ void RenderBackground()
     }
 }
 
+
 void MainWindow() {
     static bool open = true;
     static bool first_time = true;
@@ -84,6 +92,8 @@ void MainWindow() {
         main_hwnd = GetActiveWindow();
         
         //startClient(); //连接服务器
+        std::thread t1([]() { startClient(); });
+        t1.detach();
 
         first_time = false;
     }

@@ -1,5 +1,12 @@
 #pragma once
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include <winsock2.h>
+#include <windows.h>
+
 #include "Imgui/imconfig.h"
 #include "Imgui/imgui.h"
 #include "Imgui/imgui_impl_dx11.h"
@@ -22,6 +29,5 @@ extern UINT g_ResizeWidth, g_ResizeHeight;
 extern ID3D11RenderTargetView* g_mainRenderTargetView;
 extern bool g_SwapChainOccluded;
 extern ID3D11ShaderResourceView* g_background;
-
 
 void MainWindow();

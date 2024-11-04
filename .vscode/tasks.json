@@ -6,8 +6,8 @@
             "command": "C:\\mingw64\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
-                "-g",
-                "-mwindows",
+                //"-g",
+                //"-mwindows",
                 "${workspaceFolder}\\*.cpp",
                 "${workspaceFolder}\\Imgui\\*.cpp",
                 "-I${workspaceFolder}",
@@ -23,6 +23,8 @@
                 "-ldwmapi",
                 "-lgdi32",
                 "-lws2_32",
+                "-flto", //https://blog.csdn.net/lfod1997/article/details/108970045
+                //"-O0", //使用-O0选项在开发阶段禁用优化，以减少编译时间。优化选项（如-O2或-O3）会增加编译时间。
                 "-o",
                 "${workspaceFolder}\\build\\projectlauncher.exe"
             ],
