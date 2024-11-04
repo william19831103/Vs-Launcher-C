@@ -129,11 +129,13 @@ void MainWindow() {
         ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 40, 10));
         if (ImGui::Button("X", ImVec2(30, 30))) {
             // 先断开与服务器的连接
-            if(sClientInfo && sClientInfo->isConnected) {
+            if(sClient && sClient->is_connected()) {
+                // 关闭socket连接
+                sClient->get_io_context().stop();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 sClientInfo->isConnected = false;
             }
             open = false;
-            // 移除 exit(0) 调用，改用 PostQuitMessage
             PostQuitMessage(0);
         }
 

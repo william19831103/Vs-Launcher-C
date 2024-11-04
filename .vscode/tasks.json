@@ -15,6 +15,8 @@
                 "-IE:\\ThirdPardLib\\asio-1.30.2\\include",
                 "-D_WIN32_WINNT=0x0601",
                 "-DASIO_STANDALONE",
+                "-DUNICODE",
+                "-D_UNICODE",
                 "-fexec-charset=UTF-8",
                 "-finput-charset=UTF-8",
                 "-ld3d11",
