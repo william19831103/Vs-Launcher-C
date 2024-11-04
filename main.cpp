@@ -1,3 +1,4 @@
+#pragma comment(linker, "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 #include "Auto.h"
 // Data
 ID3D11Device* g_pd3dDevice = nullptr;
@@ -16,11 +17,22 @@ void CreateRenderTarget();
 void CleanupRenderTarget();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+void ToggleConsoleWindow(bool show) {
+    HWND consoleWindow = GetConsoleWindow();
+    if (consoleWindow != NULL) {
+        ShowWindow(consoleWindow, show ? SW_SHOW : SW_HIDE);
+    }
+}
+
 // Main code
-int main(int, char**)
+int main(int argc, char* argv[])
 {
-    SetConsoleOutputCP(CP_UTF8); //控制台输出中文utf8编码
-    SetConsoleCP(CP_UTF8); //控制台输入中文utf8编码
+    // 确保控制台窗口被隐藏
+    ToggleConsoleWindow(false);
+    
+    // 移除或注释掉这些控制台相关的设置，因为我们不再需要它们
+    // SetConsoleOutputCP(CP_UTF8); 
+    // SetConsoleCP(CP_UTF8); 
 
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();

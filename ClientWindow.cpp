@@ -125,11 +125,16 @@ void MainWindow() {
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.5f, 0.6f, 1.0f, 0.9f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.4f, 0.9f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-
         // 添加关闭按钮
         ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 40, 10));
         if (ImGui::Button("X", ImVec2(30, 30))) {
+            // 先断开与服务器的连接
+            if(sClientInfo && sClientInfo->isConnected) {
+                sClientInfo->isConnected = false;
+            }
             open = false;
+            // 移除 exit(0) 调用，改用 PostQuitMessage
+            PostQuitMessage(0);
         }
 
         // 计算底部按钮的位置和间距
@@ -219,7 +224,8 @@ void MainWindow() {
         ImGui::End();
     }
     else {
-        exit(0);
+        // 修改这里的逻辑，同样使用 PostQuitMessage
+        PostQuitMessage(0);
     }
 }
 
