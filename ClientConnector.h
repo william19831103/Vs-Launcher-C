@@ -33,7 +33,7 @@ public:
     }
 
     std::string ip;
-    std::string port;
+    int port;
     std::string name;
     std::string notice;
     bool isConnected = false;
@@ -75,6 +75,8 @@ private:
     void request_next_patch();
     bool is_standard_patch_format(const std::string& filename);
     bool is_single_char_patch_format(const std::string& filename);
+    // 解析服务器信息
+    void parse_server_info(const std::string& info);
 
 private:
     static constexpr size_t CHUNK_SIZE = 8192;

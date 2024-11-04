@@ -78,12 +78,10 @@ void RenderBackground()
     }
 }
 
-
 void MainWindow() {
     static bool open = true;
     static bool first_time = true;
     static int bg_width = 0, bg_height = 0;
-    static bool serverOnline = true;
     static HWND main_hwnd = NULL;
     
     if (first_time)
@@ -108,14 +106,17 @@ void MainWindow() {
         style.GrabRounding = 12.0f;       // 滑块圆角
         style.TabRounding = 12.0f;        // 标签页圆角
 
-        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(1000, 600));
+        // 设置默认窗口大小
+        ImGui::SetNextWindowSize(ImVec2(1050, 650), ImGuiCond_FirstUseEver);
         
         ImGui::Begin("魔兽世界登录器", &open, 
             ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoResize | 
-            ImGuiWindowFlags_NoCollapse);
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoScrollbar|
+            ImGuiWindowFlags_NoResize);  // 移除NoResize标志,允许调整窗口大小
 
+        // 绘制背景前设置光标位置到窗口左上角
+        ImGui::SetCursorPos(ImVec2(0, 0));
         // 绘制背景
         RenderBackground();
 
@@ -149,7 +150,7 @@ void MainWindow() {
         // 绘制状态指示器圆圈
         float circle_radius = 8.0f;
         ImVec2 circle_pos = ImGui::GetCursorScreenPos();
-        ImVec4 circle_color = serverOnline ? 
+        ImVec4 circle_color = sClientInfo->isConnected ? 
             ImVec4(0.0f, 1.0f, 0.0f, 1.0f) :  // 在线时为绿色
             ImVec4(0.5f, 0.5f, 0.5f, 1.0f);   // 离线时为灰色
         
@@ -167,28 +168,24 @@ void MainWindow() {
         ImGui::SetWindowFontScale(1.3f);
 
         if (!sClientInfo->name.empty() && sClientInfo->isConnected)
-        {
-            int wlen = MultiByteToWideChar(CP_UTF8, 0, sClientInfo->name.c_str(), -1, NULL, 0);
-            if (wlen > 0) 
-            { 
-                ImGui::Text("%s", sClientInfo->name.c_str());
-            }
+        {  
+            ImGui::Text(sClientInfo->name.c_str());
         } 
         else 
         {
-            ImGui::Text("炽焰战网");
+            ImGui::Text("XX魔兽");
         }
         
         ImGui::SetWindowFontScale(1.0f);
         ImGui::PopFont();
 
-        // 更新服务器状态指示器
-        serverOnline = sClientInfo->isConnected;
+
 
         // 通知区域
         ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 20));
-        ImGui::BeginChild("通知区域", ImVec2(600, 400), true);
-        ImGui::SetWindowFontScale(1.3f);
+        ImGui::BeginChild("通知区域", ImVec2(650, 450), false); // 将true改为false去掉边框
+        // 设置字体大小
+        ImGui::SetWindowFontScale(1.0f);        
         ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
         ImGui::TextUnformatted(sClientInfo->notice.c_str());
         ImGui::PopTextWrapPos();

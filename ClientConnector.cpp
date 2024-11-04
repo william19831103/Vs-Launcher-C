@@ -122,6 +122,36 @@ void TcpClient::handle_message_header(const MessageHeader& header) {
         do_read_header();
     }
 }
+void TcpClient::parse_server_info(const std::string& info) {
+    std::vector<std::string> parts;
+    std::string::size_type start = 0;
+    std::string::size_type end = 0;
+    
+    // 根据分隔符"||"分割字符串
+    while ((end = info.find("||", start)) != std::string::npos) {
+        parts.push_back(info.substr(start, end - start));
+        start = end + 2;  // 跳过分隔符长度
+    }
+    // 添加最后一个部分
+    parts.push_back(info.substr(start));
+
+    // 确保有足够的部分
+    if (parts.size() >= 4) {
+        sClientInfo->name = parts[0];
+        sClientInfo->ip = parts[1];
+        try {
+            sClientInfo->port = std::stoi(parts[2]);
+        } catch (const std::exception& e) {
+            std::cout << "解析服务器端口失败: " << e.what() << std::endl;
+            sClientInfo->port = 3724; // 设置默认端口
+        }
+        sClientInfo->notice = parts[3];
+        sClientInfo->isConnected = true;       
+
+    } else {
+        std::cout << "服务器信息格式错误" << std::endl;
+    }
+}
 
 void TcpClient::handle_message(uint16_t opcode, const std::vector<char>& data) {
     std::cout << "收到消息，操作码: 0x" << std::hex << opcode << std::dec << std::endl;
@@ -130,8 +160,8 @@ void TcpClient::handle_message(uint16_t opcode, const std::vector<char>& data) {
         case SMSG_SERVER_NOTICE:
             {
                 std::string notice(data.begin(), data.end());
-                sClientInfo->notice = notice;
-                std::cout << "服务器通知: " << notice << std::endl;
+                parse_server_info(notice);
+                //std::cout << "服务器通知: " << notice << std::endl;
             }
             break;
             
@@ -340,6 +370,9 @@ void startClient() {
             sClient->get_io_context().run(); 
         });
         t.detach();
+
+        // 获取服务器通知
+        sClient->send_message(CMSG_GET_SERVER_NOTICE);
 
         std::string input;
         while (true) {
