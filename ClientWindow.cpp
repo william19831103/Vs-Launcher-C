@@ -222,7 +222,210 @@ void MainWindow() {
         // 底部按钮 - 所有四个按钮
         ImGui::SetCursorPos(ImVec2(start_x, start_y));
         if (ImGui::Button("注册账号", ImVec2(button_width, button_height))) {
-            // 处理注册账号按钮点击
+            ImGui::OpenPopup("注册账号");
+        }
+
+        // 在BeginPopupModal之前设置窗口大小
+        ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Always);
+        
+        // 注册弹窗
+        if (ImGui::BeginPopupModal("注册账号", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            static char account[64] = "";
+            static char password[64] = "";
+            static char confirmPassword[64] = "";
+            static char securityKey[64] = "";
+            static char verifyCode[16] = "";
+            static int selectedOption = 0;             
+            // 标题
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+            float text_width = ImGui::CalcTextSize(sClientInfo->name.c_str()).x;
+            float window_width = ImGui::GetWindowSize().x;
+            ImGui::SetCursorPosX((window_width - text_width) * 0.5f);
+            ImGui::TextWrapped(sClientInfo->name.c_str());
+            ImGui::PopStyleColor();
+
+            ImGui::Spacing();
+            ImGui::Spacing();
+
+            // 提示文本
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 1.0f, 1.0f));
+            ImGui::TextWrapped("*欢迎使用账号注册服务,请务必牢记账号密码*");
+            ImGui::PopStyleColor();
+
+            ImGui::Spacing();
+            ImGui::Spacing();
+
+            // 输入框
+            float label_width = 80.0f;  // 标签宽度
+            float input_width = 167.0f; // 输入框宽度缩短1/3
+            float hint_width = 120.0f;  // 提示文本宽度
+            float spacing = 10.0f;      // 间距
+
+            // 账号输入框
+            ImGui::Text("账号名称"); 
+            ImGui::SameLine(label_width);
+            ImGui::PushItemWidth(input_width);
+            // 添加输入过滤回调,只允许字母和数字,并限制长度4-12位
+            ImGui::InputText("##account", account, IM_ARRAYSIZE(account), ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CallbackEdit,
+                [](ImGuiInputTextCallbackData* data) -> int {
+                    if(data->EventFlag == ImGuiInputTextFlags_CallbackEdit) {
+                        if(data->BufTextLen >= 12) { // 使用BufTextLen而不是strlen
+                            data->DeleteChars(12, data->BufTextLen - 12);
+                            data->BufDirty = true;
+                        }
+                        return 0;
+                    }
+                    if (isalnum((unsigned char)data->EventChar)) // 只允许字母和数字
+                        return 0;
+                    return 1; // 返回1表示过滤掉该字符
+                });
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "4-12位数字和字母");
+
+            // 密码输入框
+            ImGui::Text("输入密码");
+            ImGui::SameLine(label_width);
+            ImGui::PushItemWidth(input_width);
+            ImGui::InputText("##password", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CallbackEdit,
+                [](ImGuiInputTextCallbackData* data) -> int {
+                    if(data->EventFlag == ImGuiInputTextFlags_CallbackEdit) {
+                        if(data->BufTextLen >= 12) {
+                            data->DeleteChars(12, data->BufTextLen - 12);
+                            data->BufDirty = true;
+                        }
+                        return 0;
+                    }
+                    if (isalnum((unsigned char)data->EventChar)) // 只允许字母和数字
+                        return 0;
+                    return 1;
+                });
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "4-12位数字和字母");
+
+            // 确认密码
+            ImGui::Text("确认密码");
+            ImGui::SameLine(label_width);
+            ImGui::PushItemWidth(input_width);
+            ImGui::InputText("##confirmPassword", confirmPassword, IM_ARRAYSIZE(confirmPassword), ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CallbackEdit,
+                [](ImGuiInputTextCallbackData* data) -> int {
+                    if(data->EventFlag == ImGuiInputTextFlags_CallbackEdit) {
+                        if(data->BufTextLen >= 12) {
+                            data->DeleteChars(12, data->BufTextLen - 12);
+                            data->BufDirty = true;
+                        }
+                        return 0;
+                    }
+                    if (isalnum((unsigned char)data->EventChar)) // 只允许字母和数字
+                        return 0;
+                    return 1;
+                });
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "两次输入的密码");
+
+            // 安全密钥
+            ImGui::Text("安全密钥");
+            ImGui::SameLine(label_width);
+            ImGui::PushItemWidth(input_width);
+            ImGui::InputText("##securityKey", securityKey, IM_ARRAYSIZE(securityKey), ImGuiInputTextFlags_CallbackCharFilter,
+                [](ImGuiInputTextCallbackData* data) -> int {
+                    if (isalnum((unsigned char)data->EventChar)) // 只允许字母和数字
+                        return 0;
+                    return 1;
+                });
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "1-8位数字和字母");
+
+            // 验证码
+            static char randomCode[5] = ""; // 4位数字+结束符
+            static bool codeGenerated = false;
+            if (!codeGenerated) {
+                // 生成4位随机数字
+                srand(time(NULL));
+                sprintf(randomCode, "%04d", rand() % 10000);
+                codeGenerated = true;
+            }
+
+            ImGui::Text("随机验证");
+            ImGui::SameLine(label_width);
+            ImGui::PushItemWidth(input_width);
+            ImGui::InputText("##verifyCode", verifyCode, IM_ARRAYSIZE(verifyCode));
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), randomCode);
+
+            ImGui::PopItemWidth();
+
+            ImGui::Spacing();
+            ImGui::Spacing();
+
+            // 单选按钮
+            ImGui::RadioButton("账号注册", &selectedOption, 0); 
+            
+            ImGui::Spacing();
+            ImGui::Spacing();
+            //服务器回复消息
+            if (!sClientInfo->response.empty())
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                ImGui::Text(sClientInfo->response.c_str());
+                ImGui::PopStyleColor();
+            }
+            
+            ImGui::Spacing();
+            ImGui::Spacing();
+
+            if (ImGui::Button("确认", ImVec2(120, 0))) {
+                if (strlen(account) < 4 || strlen(password) < 4 || strlen(confirmPassword) < 4) {
+                    // 账号或密码长度不足
+                    ImGui::OpenPopup("错误提示");
+                } else if (strlen(securityKey) > 8) {
+                    // 安全密钥长度不足
+                    ImGui::OpenPopup("错误提示");
+                } else if (strcmp(password, confirmPassword) != 0) {
+                    // 两次密码不一致
+                    ImGui::OpenPopup("密码错误");
+                } else if (strcmp(verifyCode, randomCode) != 0) {
+                    // 验证码错误
+                    ImGui::OpenPopup("验证码错误");
+                } else {
+                    std::string registerInfo = std::string(account) + "||" + password + "||" + securityKey;
+                    sClient->send_message(CMSG_REGISTER_ACCOUNT, registerInfo);
+                }
+            }
+            if (ImGui::BeginPopupModal("错误提示", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("账号和密码长度需要大于4位,安全密钥需要小于8位!");
+                if (ImGui::Button("确定")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            if (ImGui::BeginPopupModal("密码错误", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("两次输入的密码不一致!");
+                if (ImGui::Button("确定")) {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            if (ImGui::BeginPopupModal("验证码错误", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("验证码输入错误!");
+                if (ImGui::Button("确定"))                 
+                {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 140); // 向右移动20像素
+            if (ImGui::Button("关闭", ImVec2(100, 0))) {
+                account[0] = '\0';
+                password[0] = '\0';
+                confirmPassword[0] = '\0';
+                securityKey[0] = '\0';
+                verifyCode[0] = '\0';
+                codeGenerated = false;
+                sClientInfo->response = "";
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
 
         ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, start_y));

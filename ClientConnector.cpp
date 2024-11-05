@@ -199,7 +199,8 @@ void TcpClient::handle_message(uint16_t opcode, const std::vector<char> &data)
     break;
 
     case SMSG_REGISTER_RESULT:
-        std::cout << "注册结果: " << std::string(data.begin(), data.end()) << std::endl;
+        sClientInfo->response=std::string(data.begin(), data.end());
+        //std::cout << "注册结果: " << std::string(data.begin(), data.end()) << std::endl;
         break;
 
     case SMSG_PATCH_INFO:
@@ -444,9 +445,10 @@ void startClient()
 
         // 获取服务器通知
         sClient->send_message(CMSG_GET_SERVER_NOTICE);
-        /*
-                std::string input;
-                while (true) {
+
+        std::string input;
+        while (true)
+        {
                     sClient->show_menu();
                     std::getline(std::cin, input);
 
@@ -455,15 +457,16 @@ void startClient()
                         sClient->send_message(CMSG_GET_SERVER_NOTICE);
                     }
                     else if (input == "2") {
-                        std::cout << "请输入要注册的账号: ";
+                        std::cout << "请输入要注册的账号和密码 (账号 密码): ";
                         std::string account;
                         std::getline(std::cin, account);
+
                         sClient->send_message(CMSG_REGISTER_ACCOUNT, account);
                     }
                     else if (input == "3") {
                         sClient->send_message(CMSG_CHECK_PATCH);
                     }
-                }*/
+                }
     }
     catch (std::exception &e)
     {

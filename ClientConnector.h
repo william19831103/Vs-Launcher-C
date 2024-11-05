@@ -37,6 +37,7 @@ public:
     std::string name;
     std::string notice;
     bool isConnected = false;
+    std::string response;
 };
 #define sClientInfo ClientInfo::instance()
 
