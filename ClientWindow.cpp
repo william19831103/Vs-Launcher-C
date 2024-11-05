@@ -187,17 +187,37 @@ void MainWindow() {
         ImGui::PopFont();
 
 
-
         // 通知区域
         ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 20));
-        ImGui::BeginChild("通知区域", ImVec2(650, 450), false); // 将true改为false去掉边框
-        // 设置字体大小
-        ImGui::SetWindowFontScale(1.0f);        
-        ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
-        ImGui::TextUnformatted(sClientInfo->notice.c_str());
-        ImGui::PopTextWrapPos();
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // 完全透明背景
+        ImGui::BeginChild("通知区域", ImVec2(650, 450), false); // 移除边框
+
+        // 添加标题
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
+        ImGui::SetWindowFontScale(1.2f);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // 增加标题文字亮度
+        ImGui::SetCursorPosX((650 - ImGui::CalcTextSize("服务器公告").x) * 0.5f);
+        ImGui::Text("服务器公告");
+        ImGui::PopStyleColor();
         ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
+
+        ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(1.0f, 1.0f, 1.0f, 0.3f)); // 更亮的分隔线
+        ImGui::Separator();
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+
+        // 通知内容
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // 增加正文文字亮度
+        ImGui::PushTextWrapPos(ImGui::GetContentRegionAvail().x);
+        ImGui::SetWindowFontScale(1.1f);
+        ImGui::TextWrapped(sClientInfo->notice.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::PopStyleColor();
+
         ImGui::EndChild();
+        ImGui::PopStyleColor(); // 弹出背景色
 
         // 底部按钮 - 所有四个按钮
         ImGui::SetCursorPos(ImVec2(start_x, start_y));
