@@ -38,6 +38,7 @@ public:
     std::string notice;
     bool isConnected = false;
     std::string response;
+    bool check_patch_path_pass= false;
 };
 #define sClientInfo ClientInfo::instance()
 
@@ -59,6 +60,9 @@ public:
     void show_menu();
     bool is_connected() const { return socket_.is_open(); }
     asio::io_context& get_io_context() { return io_context_; }
+
+    // 等待服务器通知
+    bool wait_for_server_notice(int max_retries = 3, int retry_interval_ms = 500, int timeout_ms = 5000);
 
 private:
     // 私有构造函数
@@ -97,6 +101,8 @@ private:
         size_t receivedSize;
         std::ofstream file;
     };
+    public:
+    //当前正在接收的文件
     std::shared_ptr<FileReceiveContext> current_file_;
 };
 

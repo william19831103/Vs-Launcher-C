@@ -176,7 +176,7 @@ void TcpClient::parse_server_info(const std::string &info)
             sClientInfo->port = 3724; // 设置默认端口
         }
         sClientInfo->notice = parts[3];
-        sClientInfo->isConnected = true;
+        //sClientInfo->isConnected = true;
     }
     else
     {
@@ -329,6 +329,7 @@ void TcpClient::handle_patch_info(const std::vector<char> &data)
     else
     {
         std::cout << "\n所有补丁都是最新的！" << std::endl;
+        sClientInfo->check_patch_path_pass = true;
     }
 }
 
@@ -426,7 +427,41 @@ void TcpClient::request_next_patch()
     send_message(CMSG_REQUEST_PATCH_FILE, filename);
 }
 
-// ... 继续实现其他成员函数 ...
+bool TcpClient::wait_for_server_notice(int max_retries, int retry_interval_ms, int timeout_ms) {
+    auto start_time = std::chrono::steady_clock::now();
+    int retries = 0;
+    
+    while (sClientInfo->notice.empty()) {
+        // 检查是否超时
+        auto current_time = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time);
+        if (elapsed.count() >= timeout_ms) {
+            std::cout << "获取服务器通知超时" << std::endl;
+            return false;
+        }
+
+        // 检查重试次数
+        if (retries >= max_retries) {
+            std::cout << "达到最大重试次数" << std::endl;
+            return false;
+        }
+
+        // 检查连接状态
+        if (!sClientInfo->isConnected) {
+            std::cout << "未连接到服务器" << std::endl;
+            return false;
+        }
+
+        send_message(CMSG_GET_SERVER_NOTICE);
+        std::cout << "发送通知请求, 第" << retries + 1 << "次" << std::endl;
+        
+        // 等待响应
+        std::this_thread::sleep_for(std::chrono::milliseconds(retry_interval_ms));
+        retries++;
+    }
+
+    return true;
+}
 
 void startClient()
 {
@@ -435,7 +470,25 @@ void startClient()
 
     try
     {
-        sClient->connect("127.0.0.1", "8080");
+        // 读取config.ini配置文件
+        std::ifstream config_file("config.ini");
+        std::string host = "127.0.0.1";
+        std::string port = "8080";
+        
+        if (config_file.is_open()) {
+            std::string line;
+            while (std::getline(config_file, line)) {
+                if (line.find("LauncherServerIPOrHost=") != std::string::npos) {
+                    host = line.substr(line.find("=") + 1);
+                }
+                else if (line.find("LauncherServerPort=") != std::string::npos) {
+                    port = line.substr(line.find("=") + 1);
+                }
+            }
+            config_file.close();
+        }
+
+        sClient->connect(host, port);
 
         std::thread t([&]()
                       { 
@@ -443,8 +496,11 @@ void startClient()
             sClient->get_io_context().run(); });
         t.detach();
 
-        // 获取服务器通知
-        sClient->send_message(CMSG_GET_SERVER_NOTICE);
+        // 等待连接并获取服务器通知
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        if (!sClient->wait_for_server_notice()) {
+            std::cout << "无法获取服务器通知，但将继续运行..." << std::endl;
+        }
 
         std::string input;
         while (true)

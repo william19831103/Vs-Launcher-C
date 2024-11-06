@@ -31,3 +31,4 @@ extern bool g_SwapChainOccluded;
 extern ID3D11ShaderResourceView* g_background;
 
 void MainWindow();
+void Check_and_start_game();

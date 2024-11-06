@@ -1,3 +1,8 @@
+#include <winsock2.h>
+#include <windows.h>
+#include <tlhelp32.h>
+#include <psapi.h>
+
 #include "Auto.h"
 #include "ClientConnector.h"
 #include <thread>
@@ -146,7 +151,7 @@ void MainWindow() {
         float total_buttons_width = button_width * 4;
         float spacing = (window_width - total_buttons_width - 100) / 3;
         float start_x = 50;
-        float start_y = ImGui::GetWindowSize().y - button_height - 50;
+        float start_y = ImGui::GetWindowSize().y - button_height - 15;
 
         // 获取当前字体大小
         float originalFontSize = ImGui::GetFontSize() * 1.3f;  // 因为文字缩放是1.3倍
@@ -218,6 +223,37 @@ void MainWindow() {
 
         ImGui::EndChild();
         ImGui::PopStyleColor(); // 弹出背景色
+
+        // 下载进度条
+        //if(sClient && sClient->current_file_) 
+        {
+            ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 510));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+            if(sClient->current_file_) {
+                ImGui::Text("正在下载: %s", sClient->current_file_->filename.c_str());
+            }
+            ImGui::PopStyleColor();
+
+            ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 530));
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
+            if(sClient->current_file_) {
+                float progress = (float)sClient->current_file_->receivedSize / sClient->current_file_->totalSize;
+                ImGui::ProgressBar(progress, ImVec2(650, 20));
+            } else {
+                ImGui::ProgressBar(0.0f, ImVec2(650, 20));
+            }
+            ImGui::PopStyleColor();
+
+            ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 555));
+            if(sClient->current_file_) {
+                float progress = (float)sClient->current_file_->receivedSize / sClient->current_file_->totalSize;
+                ImGui::Text("%.1f%%", progress * 100);
+                ImGui::SameLine();
+                ImGui::Text("(%.2f MB/%.2f MB)", 
+                    sClient->current_file_->receivedSize / 1024.0f / 1024.0f,
+                    sClient->current_file_->totalSize / 1024.0f / 1024.0f);
+            }
+        }
 
         // 底部按钮 - 所有四个按钮
         ImGui::SetCursorPos(ImVec2(start_x, start_y));
@@ -440,7 +476,7 @@ void MainWindow() {
 
         ImGui::SetCursorPos(ImVec2(start_x + (button_width + spacing) * 3, start_y));
         if (ImGui::Button("启动游戏", ImVec2(button_width, button_height))) {
-            //check_and_start_game(main_hwnd);  // 传递窗口句柄
+            Check_and_start_game();  // 传递窗口句柄
         }
 
         // 恢复按钮样式
@@ -454,3 +490,89 @@ void MainWindow() {
     }
 }
 
+void Check_and_start_game()
+{
+    // 获取当前进程路径
+    wchar_t currentPath[MAX_PATH];
+    GetModuleFileNameW(NULL, currentPath, MAX_PATH);
+    std::wstring currentDir = std::wstring(currentPath);
+    currentDir = currentDir.substr(0, currentDir.find_last_of(L"\\"));
+
+    // 检查wow.exe是否在运行
+    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32W pe32;
+        pe32.dwSize = sizeof(pe32);
+        if (Process32FirstW(hSnapshot, &pe32)) {
+            do {
+                if (_wcsicmp(pe32.szExeFile, L"Wow.exe") == 0) {
+                    // 获取进程路���
+                    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pe32.th32ProcessID);
+                    if (hProcess != NULL) {
+                        wchar_t processPath[MAX_PATH];
+                        DWORD size = MAX_PATH;
+                        if (QueryFullProcessImageNameW(hProcess, 0, processPath, &size)) {
+                            std::wstring procDir = std::wstring(processPath);
+                            procDir = procDir.substr(0, procDir.find_last_of(L"\\"));
+                            
+                            // 如果是相同目录下的wow.exe才提示
+                            if (_wcsicmp(currentDir.c_str(), procDir.c_str()) == 0) {
+                                MessageBoxW(NULL, L"请先关闭当前目录下的魔兽世界客户端再启动游戏!", L"提示", MB_OK | MB_ICONWARNING);
+                                CloseHandle(hProcess);
+                                CloseHandle(hSnapshot);
+                                return;
+                            }
+                        }
+                        CloseHandle(hProcess);
+                    }
+                }
+            } while (Process32NextW(hSnapshot, &pe32));
+        }
+        CloseHandle(hSnapshot);
+    }
+
+    // 检查游戏是否启动
+    sClient->send_message(CMSG_CHECK_PATCH);
+
+/*
+    if (!sClientInfo->check_patch_path_pass)
+    {
+        MessageBoxW(NULL, L"请等待服务器更新补丁完毕!", L"错误", MB_OK | MB_ICONERROR);
+        return;
+    }
+    */
+    
+
+    // 写入realmlist.wtf
+    std::wstring realmlistPath = currentDir + L"\\realmlist.wtf";
+    std::ofstream realmlist(realmlistPath.c_str());
+    if (realmlist.is_open()) {
+        realmlist << "SET realmlist " << sClientInfo->ip << std::endl;
+        realmlist.close();
+    } else {
+        MessageBoxW(NULL, L"无法写入realmlist.wtf文件!", L"错误", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    // 启动游戏进程
+    STARTUPINFOW si = { sizeof(si) };
+    PROCESS_INFORMATION pi;
+    std::wstring exePath = currentDir + L"\\Wow.exe";
+    
+    if (CreateProcessW(
+        exePath.c_str(),     // 应用程序名称
+        NULL,                // 命令行参数
+        NULL,                // 进程安全属性
+        NULL,                // 线程安全属性 
+        FALSE,              // 是否继承句柄
+        0,                  // 创建标志
+        NULL,               // 环境变量
+        currentDir.c_str(), // 当前目录
+        &si,                // STARTUPINFO
+        &pi                 // PROCESS_INFORMATION
+    )) {
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+
+}
