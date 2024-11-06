@@ -39,6 +39,8 @@ public:
     bool isConnected = false;
     std::string response;
     bool check_patch_path_pass= false;
+    std::string download_notice;
+    bool update_finished = false;
 };
 #define sClientInfo ClientInfo::instance()
 

@@ -224,36 +224,31 @@ void MainWindow() {
         ImGui::EndChild();
         ImGui::PopStyleColor(); // 弹出背景色
 
-        // 下载进度条
-        //if(sClient && sClient->current_file_) 
+
+        if(!sClientInfo->download_notice.empty())
         {
-            ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 510));
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-            if(sClient->current_file_) {
-                ImGui::Text("正在下载: %s", sClient->current_file_->filename.c_str());
-            }
-            ImGui::PopStyleColor();
+            // 计算主窗口中心位置
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImVec2 window_size(400, 400);
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowSize(window_size);
 
-            ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 530));
-            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f, 0.8f, 0.0f, 1.0f));
-            if(sClient->current_file_) {
-                float progress = (float)sClient->current_file_->receivedSize / sClient->current_file_->totalSize;
-                ImGui::ProgressBar(progress, ImVec2(650, 20));
-            } else {
-                ImGui::ProgressBar(0.0f, ImVec2(650, 20));
-            }
-            ImGui::PopStyleColor();
-
-            ImGui::SetCursorPos(ImVec2(start_x + button_width + spacing, 555));
-            if(sClient->current_file_) {
-                float progress = (float)sClient->current_file_->receivedSize / sClient->current_file_->totalSize;
-                ImGui::Text("%.1f%%", progress * 100);
-                ImGui::SameLine();
-                ImGui::Text("(%.2f MB/%.2f MB)", 
-                    sClient->current_file_->receivedSize / 1024.0f / 1024.0f,
-                    sClient->current_file_->totalSize / 1024.0f / 1024.0f);
+            if (ImGui::Begin("补丁更新", nullptr, ImGuiWindowFlags_NoCollapse))
+            {
+                ImGui::TextWrapped(sClientInfo->download_notice.c_str());
+                
+                // 如果补丁更新完成,显示关闭按钮
+                if(sClientInfo->update_finished)
+                {
+                    sClientInfo->download_notice.clear(); // 清空通知内容以关闭窗口
+                    sClientInfo->update_finished = false;
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::End();
             }
         }
+
+
 
         // 底部按钮 - 所有四个按钮
         ImGui::SetCursorPos(ImVec2(start_x, start_y));
@@ -492,58 +487,19 @@ void MainWindow() {
 
 void Check_and_start_game()
 {
+    // 检查游戏是否启动
+    sClient->send_message(CMSG_CHECK_PATCH);
+
+    Sleep(500);
     // 获取当前进程路径
     wchar_t currentPath[MAX_PATH];
     GetModuleFileNameW(NULL, currentPath, MAX_PATH);
     std::wstring currentDir = std::wstring(currentPath);
     currentDir = currentDir.substr(0, currentDir.find_last_of(L"\\"));
 
-    // 检查wow.exe是否在运行
-    HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnapshot != INVALID_HANDLE_VALUE) {
-        PROCESSENTRY32W pe32;
-        pe32.dwSize = sizeof(pe32);
-        if (Process32FirstW(hSnapshot, &pe32)) {
-            do {
-                if (_wcsicmp(pe32.szExeFile, L"Wow.exe") == 0) {
-                    // 获取进程路���
-                    HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pe32.th32ProcessID);
-                    if (hProcess != NULL) {
-                        wchar_t processPath[MAX_PATH];
-                        DWORD size = MAX_PATH;
-                        if (QueryFullProcessImageNameW(hProcess, 0, processPath, &size)) {
-                            std::wstring procDir = std::wstring(processPath);
-                            procDir = procDir.substr(0, procDir.find_last_of(L"\\"));
-                            
-                            // 如果是相同目录下的wow.exe才提示
-                            if (_wcsicmp(currentDir.c_str(), procDir.c_str()) == 0) {
-                                MessageBoxW(NULL, L"请先关闭当前目录下的魔兽世界客户端再启动游戏!", L"提示", MB_OK | MB_ICONWARNING);
-                                CloseHandle(hProcess);
-                                CloseHandle(hSnapshot);
-                                return;
-                            }
-                        }
-                        CloseHandle(hProcess);
-                    }
-                }
-            } while (Process32NextW(hSnapshot, &pe32));
-        }
-        CloseHandle(hSnapshot);
-    }
-
-    // 检查游戏是否启动
-    sClient->send_message(CMSG_CHECK_PATCH);
-
-/*
-    if (!sClientInfo->check_patch_path_pass)
-    {
-        MessageBoxW(NULL, L"请等待服务器更新补丁完毕!", L"错误", MB_OK | MB_ICONERROR);
-        return;
-    }
-    */
-    
-
-    // 写入realmlist.wtf
+    if (sClientInfo->check_patch_path_pass)
+    {   
+        // 写入realmlist.wtf
     std::wstring realmlistPath = currentDir + L"\\realmlist.wtf";
     std::ofstream realmlist(realmlistPath.c_str());
     if (realmlist.is_open()) {
@@ -574,5 +530,11 @@ void Check_and_start_game()
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
     }
+    }
 
+    else
+    {
+        MessageBoxW(NULL, L"请等待补丁更新完成后再启动游戏!", L"提示", MB_OK | MB_ICONINFORMATION);
+
+    }
 }

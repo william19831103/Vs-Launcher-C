@@ -324,6 +324,16 @@ void TcpClient::handle_patch_info(const std::vector<char> &data)
             std::cout << "- " << file << std::endl;
         }
         std::cout << "\n开始下载更新..." << std::endl;
+
+        std::stringstream ss;
+        ss << "\n需要更新的文件：" << needed_updates_.size() << " 个\n";
+        for (const auto &file : needed_updates_)
+        {
+            ss << "- " << file << "\n";
+        }
+        ss << "\n开始下载更新...";
+        sClientInfo->download_notice = ss.str();
+
         request_next_patch();
     }
     else
@@ -366,6 +376,7 @@ void TcpClient::handle_patch_file(const std::vector<char> &data)
 
             std::cout << "开始接收文件: " << filename
                       << ", 大小: " << current_file_->totalSize << " 字节" << std::endl;
+            sClientInfo->download_notice.append("\n开始接收文件: " + filename + ", 大小: " + std::to_string(current_file_->totalSize) + " 字节");
         }
         catch (const std::exception &e)
         {
@@ -384,6 +395,7 @@ void TcpClient::handle_patch_file(const std::vector<char> &data)
     std::cout << "\r接收进度: " << std::fixed << std::setprecision(2)
               << progress << "% (" << current_file_->receivedSize << "/"
               << current_file_->totalSize << " bytes)" << std::flush;
+    sClientInfo->download_notice.append("\n接收进度: " + std::to_string(progress) + "% (" + std::to_string(current_file_->receivedSize) + "/" + std::to_string(current_file_->totalSize) + " bytes)");
 }
 
 void TcpClient::handle_patch_file_end(const std::vector<char> &data)
@@ -399,18 +411,22 @@ void TcpClient::handle_patch_file_end(const std::vector<char> &data)
 
     current_file_->file.close();
     std::cout << "\n文件 " << current_file_->filename << " 接收完成" << std::endl;
-
+    sClientInfo->download_notice.append("\n文件 " + current_file_->filename + " 接收完成");
     needed_updates_.erase(needed_updates_.begin());
     current_file_.reset();
 
     if (!needed_updates_.empty())
     {
         std::cout << "\n准备请求下一个文件..." << std::endl;
+        sClientInfo->download_notice.append("\n准备请求下一个文件...");
         request_next_patch();
     }
     else
     {
         std::cout << "所有补丁更新完成！" << std::endl;
+        sClientInfo->download_notice.append("\n所有补丁更新完成！");
+        sClientInfo->update_finished = true;
+        sClientInfo->check_patch_path_pass = true;
     }
 }
 
@@ -424,6 +440,8 @@ void TcpClient::request_next_patch()
 
     std::string filename = needed_updates_.front();
     std::cout << "\n请求下载文件: " << filename << std::endl;
+    sClientInfo->download_notice.append("\n请求下载文件: " + filename);
+
     send_message(CMSG_REQUEST_PATCH_FILE, filename);
 }
 
