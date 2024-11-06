@@ -318,6 +318,7 @@ void TcpClient::handle_patch_info(const std::vector<char> &data)
 
     if (!needed_updates_.empty())
     {
+        sClientInfo->check_patch_path_pass = false;    
         std::cout << "\n需要更新的文件：" << needed_updates_.size() << " 个" << std::endl;
         for (const auto &file : needed_updates_)
         {
